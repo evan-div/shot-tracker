@@ -2,11 +2,8 @@ name: Deploy to Firebase Hosting
 
 on:
   push:
-    # The repo's default branch today is the claude/* branch; `main` is listed
-    # too so this keeps working once the work is merged or the branch renamed.
     branches:
       - main
-      - claude/event-photo-tracker-wqw4xb
   workflow_dispatch:
 
 # Never let two deploys race; cancel an in-flight one if a newer push lands.

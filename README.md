@@ -125,7 +125,7 @@ sign-in screen.
 
 ## Deploying
 
-Pushing to the default branch deploys automatically via GitHub Actions
+Pushing to `main` deploys automatically via GitHub Actions
 ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)). The workflow
 type-checks, lints, tests, builds, verifies the Firebase config actually made
 it into the bundle, and then deploys to
