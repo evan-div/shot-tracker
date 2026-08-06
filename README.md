@@ -5,8 +5,9 @@ A mobile-friendly mini project manager for event production, with two tabs:
 - **Shot Tracker** — a spreadsheet-style checklist. Each row is an affiliate,
   each column is a required shot type, and each cell records which
   photographer captured it.
-- **Reel Ideas** — an editable sheet of reel concepts: name, link, description
-  and a 1–5 star rating.
+- **Reel Ideas** — reel concepts as cards: who suggested it, the description as
+  a pull quote, a 1–5 star rating, and a button through to the reel. A new card
+  opens in edit mode and becomes a card once you hit Done.
 
 Built with React + TypeScript + Vite and plain CSS. Data lives in Cloud
 Firestore and is shared across devices in real time; without Firebase
@@ -193,7 +194,6 @@ The layout is built phone-first:
   easier to reach one-handed, and it can't land half off-screen next to an edge
   column. The sheet names the cell being edited, since it covers the table.
 - Touch targets are at least 48px (52px inside the sheet).
-- The Reel Ideas sheet is a table on desktop but becomes one card per idea
-  below 700px — typing into a 200px cell you have to scroll sideways to reach
-  is miserable on a touch keyboard. Inputs use a 16px font there so iOS Safari
-  doesn't zoom on focus.
+- Reel ideas render as cards, one per idea, in a grid that collapses to a
+  single column below 700px. Editing happens in the card itself; inputs use a
+  16px font on mobile so iOS Safari doesn't zoom on focus.

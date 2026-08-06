@@ -7,6 +7,7 @@ interface SheetInputProps {
   placeholder?: string;
   type?: 'text' | 'url';
   multiline?: boolean;
+  id?: string;
 }
 
 const DEBOUNCE_MS = 600;
@@ -23,6 +24,7 @@ export function SheetInput({
   placeholder,
   type = 'text',
   multiline = false,
+  id,
 }: SheetInputProps) {
   const [draft, setDraft] = useState(value);
   const focused = useRef(false);
@@ -56,6 +58,7 @@ export function SheetInput({
   };
 
   const shared = {
+    id,
     className: 'sheet-input',
     value: draft,
     placeholder,

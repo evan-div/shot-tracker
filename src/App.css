@@ -527,67 +527,216 @@
   font-size: 0.9rem;
 }
 
-.reel-table {
-  border-collapse: separate;
-  border-spacing: 0;
-  width: 100%;
-  min-width: 820px;
-  table-layout: fixed;
+/* ---------- Reel idea cards ---------- */
+
+.reel-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.1rem;
 }
 
-.reel-table thead th {
+.reel-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  padding: 1.75rem 1.75rem 1.5rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  box-shadow: 0 2px 10px rgba(35, 40, 37, 0.05);
+}
+
+.reel-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.reel-author {
+  margin: 0;
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: #111;
+  overflow-wrap: anywhere;
+}
+
+.reel-added {
+  margin: 0.45rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #b3b6b0;
+}
+
+.reel-rating {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  color: #d99a2b;
+}
+
+/*
+ * Decorative quote marks, matching the reference card. They are presentational
+ * only — the description text carries the meaning, so they are hidden from
+ * assistive tech.
+ */
+.reel-quote {
+  position: relative;
+  margin: 0;
+  padding: 0.5rem 1.6rem 0.75rem 1.9rem;
+  flex: 1;
+}
+
+.reel-quote p {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #111;
+  overflow-wrap: anywhere;
+}
+
+.reel-quote::before,
+.reel-quote::after {
+  position: absolute;
+  color: #dcdcd6;
+  font-size: 4.5rem;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.reel-quote::before {
+  content: '\201C';
+  top: -0.4rem;
+  left: -0.1rem;
+}
+
+.reel-quote::after {
+  content: '\201D';
+  right: -0.1rem;
+  bottom: -1.1rem;
+}
+
+.reel-open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  padding: 0.75rem 1.25rem;
+  border-radius: 999px;
+  background: #3f9a53;
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-decoration: none;
+  text-align: center;
+  transition: background 0.15s ease;
+}
+
+.reel-open:hover {
+  background: #368647;
+}
+
+.reel-card-actions,
+.reel-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.reel-edit,
+.reel-delete-text,
+.reel-done {
+  appearance: none;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.reel-edit {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+}
+
+.reel-edit:hover {
+  background: var(--row-tint);
+}
+
+.reel-done {
+  border: none;
   background: var(--forest);
   color: #fff;
-  font-size: 0.72rem;
+  padding: 0 1.3rem;
+}
+
+.reel-done:hover {
+  background: #38483d;
+}
+
+.reel-delete-text {
+  border: none;
+  background: transparent;
+  color: #9a3b3b;
+}
+
+.reel-delete-text:hover {
+  background: #fdf3f3;
+}
+
+/* ---------- Card edit mode ---------- */
+
+.reel-card.editing {
+  gap: 1rem;
+}
+
+.reel-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.reel-label {
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  text-align: left;
-  padding: 1rem 0.85rem;
-}
-
-.reel-table .col-name { width: 160px; }
-.reel-table .col-link { width: 230px; }
-.reel-table .col-description { width: auto; }
-.reel-table .col-rating { width: 150px; }
-.reel-table .col-actions { width: 60px; }
-
-.reel-table thead tr th:first-child { border-top-left-radius: 15px; }
-.reel-table thead tr th:last-child { border-top-right-radius: 15px; }
-.reel-table tbody tr:last-child td:first-child { border-bottom-left-radius: 15px; }
-.reel-table tbody tr:last-child td:last-child { border-bottom-right-radius: 15px; }
-
-.reel-table tbody tr:nth-child(even) td { background: var(--row-tint); }
-.reel-table tbody tr:nth-child(odd) td { background: #fff; }
-
-.reel-table tbody td {
-  border-top: 1px solid var(--border);
-  padding: 0.5rem 0.6rem;
-  vertical-align: middle;
+  color: var(--muted);
 }
 
 .sheet-input {
   width: 100%;
   font: inherit;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   color: var(--text);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 0.55rem 0.6rem;
-  min-height: 44px;
-  resize: none;
-}
-
-.sheet-input:hover {
-  border-color: var(--border);
   background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  min-height: 46px;
+  resize: none;
 }
 
 .sheet-input:focus {
   outline: none;
   border-color: var(--forest);
-  background: #fff;
   box-shadow: 0 0 0 3px rgba(43, 56, 48, 0.12);
 }
 
@@ -595,178 +744,25 @@
   color: #a3a79f;
 }
 
-.link-cell {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.open-link {
-  flex-shrink: 0;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--forest);
-  text-decoration: none;
-  padding: 0.5rem 0.55rem;
-  border-radius: 8px;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-}
-
-.open-link:hover {
-  background: #eef1ed;
-  text-decoration: underline;
-}
-
-.star-rating {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.1rem;
-}
-
-.star {
-  appearance: none;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 1.3rem;
-  line-height: 1;
-  color: #c9ccc5;
-  padding: 0.35rem 0.15rem;
-  min-height: 44px;
-  min-width: 28px;
-  border-radius: 6px;
-  transition: color 0.12s ease, transform 0.12s ease;
-}
-
-.star.filled {
-  color: #d99a2b;
-}
-
-.star:hover {
-  transform: scale(1.12);
-}
-
-.row-delete,
-.row-delete-confirm,
-.row-delete-cancel {
-  appearance: none;
-  font: inherit;
-  cursor: pointer;
-  border-radius: 8px;
-  min-height: 44px;
-}
-
-.row-delete {
-  border: none;
-  background: transparent;
-  color: #9aa096;
-  font-size: 1rem;
-  min-width: 44px;
-}
-
-.row-delete:hover {
-  background: #f6e9e9;
-  color: #a33a3a;
-}
-
-.row-confirm {
-  display: inline-flex;
-  gap: 0.3rem;
-  flex-wrap: wrap;
-}
-
-.row-delete-confirm {
-  border: none;
-  background: #a33a3a;
-  color: #fff;
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding: 0 0.7rem;
-}
-
-.row-delete-cancel {
-  border: 1px solid var(--border);
-  background: #fff;
-  color: var(--text);
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding: 0 0.7rem;
-}
-
-/*
- * On phones the reel sheet stops being a scrolling grid and becomes one card
- * per idea — text entry in a 200px-wide cell you have to scroll sideways to
- * reach is miserable on a touch keyboard.
- */
 @media (max-width: 700px) {
-  .reel-table,
-  .reel-table tbody,
-  .reel-table tr,
-  .reel-table td {
-    display: block;
-    width: auto;
+  .reel-cards {
+    grid-template-columns: 1fr;
   }
 
-  .reel-table {
-    min-width: 0;
+  .reel-card {
+    padding: 1.4rem 1.35rem 1.25rem;
+    border-radius: 24px;
   }
 
-  .reel-table thead {
-    display: none;
+  .reel-author {
+    font-size: 2rem;
   }
 
-  .reel-table tbody tr {
-    border-top: 1px solid var(--border);
-    padding: 0.5rem 0.75rem 0.85rem;
-    position: relative;
-  }
-
-  .reel-table tbody tr:first-child {
-    border-top: none;
-  }
-
-  .reel-table tbody tr:nth-child(even) td,
-  .reel-table tbody tr:nth-child(even) {
-    background: var(--row-tint);
-  }
-
-  .reel-table tbody td {
-    border-top: none;
-    background: transparent !important;
-    padding: 0.3rem 0;
-  }
-
-  .reel-table tbody td::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 0.15rem;
-  }
-
-  .reel-table tbody td.col-actions {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    padding: 0;
-  }
-
-  .reel-table tbody td.col-actions::before {
-    content: none;
+  .reel-quote p {
+    font-size: 1.05rem;
   }
 
   .sheet-input {
-    background: #fff;
-    border-color: var(--border);
     font-size: 16px; /* keeps iOS Safari from zooming on focus */
-  }
-
-  .col-name .sheet-input {
-    padding-right: 3rem; /* clear of the delete button */
   }
 }

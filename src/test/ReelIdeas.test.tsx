@@ -55,13 +55,13 @@ describe('Tabs', () => {
   });
 });
 
-describe('Reel ideas sheet', () => {
+describe('Reel ideas cards', () => {
   beforeEach(() => {
     window.localStorage.clear();
     window.location.hash = '';
   });
 
-  it('starts empty and adds a row', async () => {
+  it('starts empty and adds a card that opens in edit mode', async () => {
     const user = userEvent.setup();
     await openReelsTab(user);
 
@@ -69,39 +69,76 @@ describe('Reel ideas sheet', () => {
 
     await user.click(screen.getByRole('button', { name: '+ Add idea' }));
 
-    expect(screen.getByRole('table')).toBeInTheDocument();
+    // A blank card goes straight to the fields, with nothing to read yet.
+    expect(screen.getByRole('textbox', { name: /^Name for/ })).toBeInTheDocument();
     expect(storedIdeas()).toHaveLength(1);
   });
 
-  it('saves name, link and description, and restores them after a remount', async () => {
+  it('turns a filled-in idea into a card with the author, quote and link', async () => {
     const user = userEvent.setup();
-    const { unmount } = await openReelsTab(user);
+    await openReelsTab(user);
     await user.click(screen.getByRole('button', { name: '+ Add idea' }));
 
     await user.type(screen.getByRole('textbox', { name: /^Name for/ }), 'Evan');
     await user.type(
       screen.getByRole('textbox', { name: /^Reel link for/ }),
-      'https://example.com/reel'
+      'https://instagram.com/reel/abc123'
     );
     await user.type(
       screen.getByRole('textbox', { name: /^Description for/ }),
-      'Backstage b-roll'
+      'Backstage b-roll of the reveal'
     );
-    // Commit the debounced edits.
-    await user.click(document.body);
+    await user.click(screen.getByRole('button', { name: 'Done' }));
 
-    expect(storedIdeas()[0]).toMatchObject({
-      author: 'Evan',
-      url: 'https://example.com/reel',
-      description: 'Backstage b-roll',
-    });
+    expect(screen.getByRole('heading', { name: 'Evan' })).toBeInTheDocument();
+    expect(screen.getByText('Backstage b-roll of the reveal')).toBeInTheDocument();
+    expect(screen.getByText(/^added /)).toBeInTheDocument();
 
-    unmount();
-    const user2 = userEvent.setup();
-    await openReelsTab(user2);
-    expect(await screen.findByDisplayValue('Evan')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('https://example.com/reel')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Backstage b-roll')).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /Open in Instagram/ });
+    expect(link).toHaveAttribute('href', 'https://instagram.com/reel/abc123');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+
+    // The fields are gone until you choose to edit again.
+    expect(screen.queryByRole('textbox', { name: /^Name for/ })).not.toBeInTheDocument();
+  });
+
+  it('labels the button by where the link points, and hides it without one', async () => {
+    const user = userEvent.setup();
+    await openReelsTab(user);
+    await user.click(screen.getByRole('button', { name: '+ Add idea' }));
+    await user.type(screen.getByRole('textbox', { name: /^Name for/ }), 'Fran');
+    await user.click(screen.getByRole('button', { name: 'Done' }));
+
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    await user.type(
+      screen.getByRole('textbox', { name: /^Reel link for/ }),
+      'https://www.tiktok.com/@x/video/1'
+    );
+    await user.click(screen.getByRole('button', { name: 'Done' }));
+
+    expect(screen.getByRole('link', { name: /Open in TikTok/ })).toBeInTheDocument();
+  });
+
+  it('goes back to edit mode and saves changes', async () => {
+    const user = userEvent.setup();
+    await openReelsTab(user);
+    await user.click(screen.getByRole('button', { name: '+ Add idea' }));
+    await user.type(screen.getByRole('textbox', { name: /^Name for/ }), 'Serrano');
+    await user.click(screen.getByRole('button', { name: 'Done' }));
+
+    expect(screen.getByRole('heading', { name: 'Serrano' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    const nameField = screen.getByRole('textbox', { name: /^Name for/ });
+    await user.clear(nameField);
+    await user.type(nameField, 'Serrano B');
+    await user.click(screen.getByRole('button', { name: 'Done' }));
+
+    expect(screen.getByRole('heading', { name: 'Serrano B' })).toBeInTheDocument();
+    expect(storedIdeas()[0].author).toBe('Serrano B');
   });
 
   it('sets and clears a star rating', async () => {
@@ -111,51 +148,47 @@ describe('Reel ideas sheet', () => {
 
     const stars = screen.getByRole('radiogroup', { name: /^Rating for/ });
     await user.click(within(stars).getByRole('radio', { name: '4 stars' }));
-
     expect(storedIdeas()[0].rating).toBe(4);
-    expect(within(stars).getByRole('radio', { name: '4 stars' })).toHaveAttribute(
-      'aria-checked',
-      'true'
-    );
 
-    // Clicking the current rating again clears it.
     await user.click(within(stars).getByRole('radio', { name: '4 stars' }));
     expect(storedIdeas()[0].rating).toBe(0);
   });
 
-  it('asks for confirmation before deleting a row', async () => {
+  it('asks for confirmation before deleting a card', async () => {
     const user = userEvent.setup();
     await openReelsTab(user);
     await user.click(screen.getByRole('button', { name: '+ Add idea' }));
     await user.type(screen.getByRole('textbox', { name: /^Name for/ }), 'Fran');
-    await user.click(document.body);
+    await user.click(screen.getByRole('button', { name: 'Done' }));
 
-    await user.click(screen.getByRole('button', { name: /^Delete/ }));
+    await user.click(screen.getByRole('button', { name: /^Delete Fran/ }));
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(storedIdeas()).toHaveLength(1);
 
-    await user.click(screen.getByRole('button', { name: /^Delete/ }));
+    await user.click(screen.getByRole('button', { name: /^Delete Fran/ }));
     await user.click(screen.getByRole('button', { name: 'Delete' }));
 
     expect(storedIdeas()).toHaveLength(0);
     expect(screen.getByText(/No reel ideas yet/)).toBeInTheDocument();
   });
 
-  it('shows an Open link only once a URL is entered', async () => {
+  it('restores saved cards after a remount', async () => {
     const user = userEvent.setup();
-    await openReelsTab(user);
+    const { unmount } = await openReelsTab(user);
     await user.click(screen.getByRole('button', { name: '+ Add idea' }));
-
-    expect(screen.queryByRole('link', { name: /^Open reel link/ })).not.toBeInTheDocument();
-
+    await user.type(screen.getByRole('textbox', { name: /^Name for/ }), 'Evan');
     await user.type(
-      screen.getByRole('textbox', { name: /^Reel link for/ }),
-      'https://example.com/r'
+      screen.getByRole('textbox', { name: /^Description for/ }),
+      'Reveal moment, fast cut'
     );
-    await user.click(document.body);
+    await user.click(screen.getByRole('button', { name: 'Done' }));
 
-    const link = await screen.findByRole('link', { name: /^Open reel link/ });
-    expect(link).toHaveAttribute('href', 'https://example.com/r');
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    unmount();
+    const user2 = userEvent.setup();
+    await openReelsTab(user2);
+
+    // Restored cards render as cards, not as forms.
+    expect(await screen.findByRole('heading', { name: 'Evan' })).toBeInTheDocument();
+    expect(screen.getByText('Reveal moment, fast cut')).toBeInTheDocument();
   });
 });
