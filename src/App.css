@@ -1,0 +1,363 @@
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--forest);
+}
+
+.page-subtitle {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* ---------- Progress summary ---------- */
+
+.progress {
+  margin: 1.5rem 0 1.25rem;
+}
+
+.progress-stats {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.progress-count {
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.progress-count strong {
+  font-size: 1.35rem;
+  color: var(--forest);
+}
+
+.progress-percent {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-bar {
+  height: 10px;
+  background: #e6e2d8;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--forest);
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+/* ---------- Table ---------- */
+
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: #fff;
+  -webkit-overflow-scrolling: touch;
+}
+
+.shot-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  min-width: 760px;
+}
+
+.shot-table thead th {
+  background: var(--forest);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 0.95rem 0.75rem;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.shot-table thead th.header-affiliate {
+  text-align: left;
+  z-index: 3;
+}
+
+.shot-table tbody tr:nth-child(even) td,
+.shot-table tbody tr:nth-child(even) th {
+  background: var(--row-tint);
+}
+
+.shot-table tbody tr:nth-child(odd) td,
+.shot-table tbody tr:nth-child(odd) th {
+  background: #fff;
+}
+
+.shot-table tbody th,
+.shot-table tbody td {
+  border-top: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+}
+
+.affiliate-name {
+  text-align: left;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  padding-right: 1.25rem;
+}
+
+/* Sticky first column while scrolling horizontally */
+.sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+}
+
+.affiliate-name::after,
+.header-affiliate::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+
+.header-affiliate::after {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Rounded outer corners */
+.shot-table thead tr th:first-child {
+  border-top-left-radius: 13px;
+}
+.shot-table thead tr th:last-child {
+  border-top-right-radius: 13px;
+}
+.shot-table tbody tr:last-child th:first-child {
+  border-bottom-left-radius: 13px;
+}
+.shot-table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 13px;
+}
+
+/* ---------- Cells ---------- */
+
+.shot-cell {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.shot-cell-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  min-height: 44px;
+  padding: 0.4rem 0.6rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.shot-cell-button:hover {
+  background: rgba(30, 58, 50, 0.06);
+}
+
+.empty-box {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #c3c0b6;
+  border-radius: 5px;
+  background: #fff;
+}
+
+.shot-cell-button:hover .empty-box {
+  border-color: var(--forest);
+}
+
+.shot-cell-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.check-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.shot-cell-button.assigned {
+  background: rgba(47, 111, 78, 0.08);
+}
+
+.shot-cell-button.assigned-evan {
+  background: rgba(47, 111, 78, 0.1);
+  color: var(--accent-evan);
+}
+
+.shot-cell-button.assigned-serrano {
+  background: rgba(138, 90, 43, 0.1);
+  color: var(--accent-serrano);
+}
+
+.shot-cell-button.assigned-fran {
+  background: rgba(59, 91, 140, 0.1);
+  color: var(--accent-fran);
+}
+
+/* ---------- Popover ---------- */
+
+.popover {
+  position: fixed;
+  z-index: 20;
+  width: 210px;
+  padding: 0.85rem;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(20, 30, 25, 0.16);
+  text-align: left;
+}
+
+.popover-title {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.popover-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.popover-option {
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.popover-option:hover {
+  background: var(--row-tint);
+}
+
+.popover-option.option-evan {
+  color: var(--accent-evan);
+  border-left: 4px solid var(--accent-evan);
+}
+.popover-option.option-serrano {
+  color: var(--accent-serrano);
+  border-left: 4px solid var(--accent-serrano);
+}
+.popover-option.option-fran {
+  color: var(--accent-fran);
+  border-left: 4px solid var(--accent-fran);
+}
+
+.popover-clear {
+  margin-top: 0.6rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fff;
+  color: #9a3b3b;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.popover-clear:hover {
+  background: #fdf3f3;
+  border-color: #e8c9c9;
+}
+
+.popover-confirm-text {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.popover-confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.popover-confirm-actions button {
+  flex: 1;
+  min-height: 44px;
+  border-radius: 9px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.popover-confirm-yes {
+  background: #9a3b3b;
+  border-color: #9a3b3b !important;
+  color: #fff;
+}
+
+.popover-confirm-no {
+  background: #fff;
+  color: var(--text);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 640px) {
+  .page {
+    padding: 1.25rem 0.75rem 3rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.4rem;
+  }
+
+  .affiliate-name {
+    font-size: 0.95rem;
+    max-width: 150px;
+    white-space: normal;
+  }
+
+  .shot-cell-button {
+    min-width: 84px;
+  }
+}
