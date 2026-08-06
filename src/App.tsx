@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { isSupabaseConfigured } from './data/supabase';
+import { isFirebaseConfigured } from './data/firebase';
 import { ReelIdeas } from './ReelIdeas';
 import { ShotTracker } from './ShotTracker';
 import './App.css';
@@ -40,7 +40,7 @@ export default function App() {
       <header className="page-header">
         <h1>Event Production</h1>
         <p className="page-subtitle">
-          {isSupabaseConfigured ? 'Shared with your team in real time' : 'Saved on this device'}
+          {isFirebaseConfigured ? 'Shared with your team in real time' : 'Saved on this device'}
         </p>
       </header>
 

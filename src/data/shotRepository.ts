@@ -1,12 +1,19 @@
 import { cellKey, type ShotAssignment, type ShotState } from '../types';
-import { isSupabaseConfigured, supabase } from './supabase';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  onSnapshot,
+  setDoc,
+} from 'firebase/firestore';
+import { db, isFirebaseConfigured, SHOTS_COLLECTION } from './firebase';
 
 const STORAGE_KEY = 'shot-tracker:state:v1';
-const TABLE = 'shot_assignments';
 
 /**
  * Persistence for the shot checklist. Two implementations satisfy this:
- * localStorage (single device) and Supabase (shared across devices, with
+ * localStorage (single device) and Firestore (shared across devices, with
  * realtime updates). Nothing above this layer knows which one is in use.
  */
 export interface ShotRepository {
@@ -17,20 +24,23 @@ export interface ShotRepository {
   subscribe(onChange: (state: ShotState) => void): () => void;
 }
 
-interface ShotRow {
-  affiliate_id: string;
-  shot_type_id: string;
-  photographer_id: string;
-  completed_at: string;
+/**
+ * Firestore document id for a cell. One document per affiliate/shot pair
+ * makes assigning an idempotent write and clearing a plain delete, with no
+ * read-modify-write in between.
+ */
+function docId(affiliateId: string, shotTypeId: string): string {
+  return `${affiliateId}__${shotTypeId}`;
 }
 
-function rowToAssignment(row: ShotRow): ShotAssignment {
-  return {
-    affiliateId: row.affiliate_id,
-    shotTypeId: row.shot_type_id,
-    photographerId: row.photographer_id,
-    completedAt: row.completed_at,
-  };
+function docsToState(docs: { data(): unknown }[]): ShotState {
+  const state: ShotState = {};
+  for (const d of docs) {
+    const a = d.data() as ShotAssignment;
+    if (!a?.affiliateId || !a?.shotTypeId) continue;
+    state[cellKey(a.affiliateId, a.shotTypeId)] = a;
+  }
+  return state;
 }
 
 class LocalShotRepository implements ShotRepository {
@@ -82,56 +92,34 @@ class LocalShotRepository implements ShotRepository {
   }
 }
 
-class SupabaseShotRepository implements ShotRepository {
+class FirestoreShotRepository implements ShotRepository {
   async list(): Promise<ShotState> {
-    const { data, error } = await supabase!.from(TABLE).select('*');
-    if (error) throw error;
-    const state: ShotState = {};
-    for (const row of (data ?? []) as ShotRow[]) {
-      state[cellKey(row.affiliate_id, row.shot_type_id)] = rowToAssignment(row);
-    }
-    return state;
+    const snapshot = await getDocs(collection(db!, SHOTS_COLLECTION));
+    return docsToState(snapshot.docs);
   }
 
   async assign(assignment: ShotAssignment): Promise<void> {
-    const { error } = await supabase!.from(TABLE).upsert(
-      {
-        affiliate_id: assignment.affiliateId,
-        shot_type_id: assignment.shotTypeId,
-        photographer_id: assignment.photographerId,
-        completed_at: assignment.completedAt,
-      },
-      { onConflict: 'affiliate_id,shot_type_id' }
+    await setDoc(
+      doc(db!, SHOTS_COLLECTION, docId(assignment.affiliateId, assignment.shotTypeId)),
+      assignment
     );
-    if (error) throw error;
   }
 
   async clear(affiliateId: string, shotTypeId: string): Promise<void> {
-    const { error } = await supabase!
-      .from(TABLE)
-      .delete()
-      .eq('affiliate_id', affiliateId)
-      .eq('shot_type_id', shotTypeId);
-    if (error) throw error;
+    await deleteDoc(doc(db!, SHOTS_COLLECTION, docId(affiliateId, shotTypeId)));
   }
 
   subscribe(onChange: (state: ShotState) => void): () => void {
-    // Any change refetches the whole table. It is at most a few hundred rows,
-    // and it keeps every device converging on the same state without having to
-    // merge individual insert/update/delete payloads by hand.
-    const channel = supabase!
-      .channel('shot_assignments_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: TABLE }, () => {
-        void this.list().then(onChange).catch(() => {});
-      })
-      .subscribe();
-
-    return () => {
-      void supabase!.removeChannel(channel);
-    };
+    // onSnapshot delivers the whole collection on every change, including the
+    // first, so there is nothing to merge by hand.
+    return onSnapshot(
+      collection(db!, SHOTS_COLLECTION),
+      (snapshot) => onChange(docsToState(snapshot.docs)),
+      () => {}
+    );
   }
 }
 
-export const shotRepository: ShotRepository = isSupabaseConfigured
-  ? new SupabaseShotRepository()
+export const shotRepository: ShotRepository = isFirebaseConfigured
+  ? new FirestoreShotRepository()
   : new LocalShotRepository();

@@ -1,0 +1,40 @@
+rules_version = '2';
+
+// Access model: no login. The app talks to Firestore with the web API key,
+// which ships in the JavaScript bundle, so these rules intentionally allow
+// anonymous read and write. Anyone who has the site URL can edit this data.
+// Keep the deployed URL private, or add Firebase Auth later and tighten the
+// conditions below to `request.auth != null`.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /shot_assignments/{cellId} {
+      allow read: if true;
+      allow write: if request.resource == null || (
+        request.resource.data.keys().hasOnly(
+          ['affiliateId', 'shotTypeId', 'photographerId', 'completedAt']
+        )
+        && request.resource.data.affiliateId is string
+        && request.resource.data.shotTypeId is string
+        && request.resource.data.photographerId is string
+      );
+    }
+
+    match /reel_ideas/{ideaId} {
+      allow read: if true;
+      allow write: if request.resource == null || (
+        request.resource.data.keys().hasOnly(
+          ['author', 'url', 'description', 'rating', 'createdAt']
+        )
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 0
+        && request.resource.data.rating <= 5
+      );
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

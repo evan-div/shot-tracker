@@ -1,8 +1,16 @@
 import type { ReelIdea, ReelIdeaPatch } from '../types';
-import { isSupabaseConfigured, supabase } from './supabase';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore';
+import { db, isFirebaseConfigured, REELS_COLLECTION } from './firebase';
 
 const STORAGE_KEY = 'shot-tracker:reels:v1';
-const TABLE = 'reel_ideas';
 
 export interface ReelRepository {
   list(): Promise<ReelIdea[]>;
@@ -12,33 +20,20 @@ export interface ReelRepository {
   subscribe(onChange: (ideas: ReelIdea[]) => void): () => void;
 }
 
-interface ReelRow {
-  id: string;
-  author: string;
-  url: string;
-  description: string;
-  rating: number;
-  created_at: string;
-}
-
-function rowToIdea(row: ReelRow): ReelIdea {
-  return {
-    id: row.id,
-    author: row.author ?? '',
-    url: row.url ?? '',
-    description: row.description ?? '',
-    rating: row.rating ?? 0,
-    createdAt: row.created_at,
-  };
-}
-
-function patchToRow(patch: ReelIdeaPatch): Record<string, unknown> {
-  const row: Record<string, unknown> = {};
-  if (patch.author !== undefined) row.author = patch.author;
-  if (patch.url !== undefined) row.url = patch.url;
-  if (patch.description !== undefined) row.description = patch.description;
-  if (patch.rating !== undefined) row.rating = patch.rating;
-  return row;
+function docsToIdeas(docs: { id: string; data(): unknown }[]): ReelIdea[] {
+  return docs
+    .map((d) => {
+      const v = d.data() as Partial<ReelIdea>;
+      return {
+        id: d.id,
+        author: v.author ?? '',
+        url: v.url ?? '',
+        description: v.description ?? '',
+        rating: v.rating ?? 0,
+        createdAt: v.createdAt ?? '',
+      };
+    })
+    .sort(byCreatedAt);
 }
 
 /** Oldest first, so rows don't jump around while people are typing. */
@@ -94,52 +89,35 @@ class LocalReelRepository implements ReelRepository {
   }
 }
 
-class SupabaseReelRepository implements ReelRepository {
+class FirestoreReelRepository implements ReelRepository {
   async list(): Promise<ReelIdea[]> {
-    const { data, error } = await supabase!
-      .from(TABLE)
-      .select('*')
-      .order('created_at', { ascending: true });
-    if (error) throw error;
-    return ((data ?? []) as ReelRow[]).map(rowToIdea);
+    const snapshot = await getDocs(collection(db!, REELS_COLLECTION));
+    return docsToIdeas(snapshot.docs);
   }
 
   async create(idea: ReelIdea): Promise<void> {
-    const { error } = await supabase!.from(TABLE).insert({
-      id: idea.id,
-      author: idea.author,
-      url: idea.url,
-      description: idea.description,
-      rating: idea.rating,
-      created_at: idea.createdAt,
-    });
-    if (error) throw error;
+    const { id, ...fields } = idea;
+    await setDoc(doc(db!, REELS_COLLECTION, id), fields);
   }
 
   async update(id: string, patch: ReelIdeaPatch): Promise<void> {
-    const { error } = await supabase!.from(TABLE).update(patchToRow(patch)).eq('id', id);
-    if (error) throw error;
+    await updateDoc(doc(db!, REELS_COLLECTION, id), { ...patch });
   }
 
   async remove(id: string): Promise<void> {
-    const { error } = await supabase!.from(TABLE).delete().eq('id', id);
-    if (error) throw error;
+    await deleteDoc(doc(db!, REELS_COLLECTION, id));
   }
 
   subscribe(onChange: (ideas: ReelIdea[]) => void): () => void {
-    const channel = supabase!
-      .channel('reel_ideas_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: TABLE }, () => {
-        void this.list().then(onChange).catch(() => {});
-      })
-      .subscribe();
-
-    return () => {
-      void supabase!.removeChannel(channel);
-    };
+    // Sorting client-side in docsToIdeas keeps this free of a composite index.
+    return onSnapshot(
+      collection(db!, REELS_COLLECTION),
+      (snapshot) => onChange(docsToIdeas(snapshot.docs)),
+      () => {}
+    );
   }
 }
 
-export const reelRepository: ReelRepository = isSupabaseConfigured
-  ? new SupabaseReelRepository()
+export const reelRepository: ReelRepository = isFirebaseConfigured
+  ? new FirestoreReelRepository()
   : new LocalReelRepository();

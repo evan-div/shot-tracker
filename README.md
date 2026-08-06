@@ -8,26 +8,27 @@ A mobile-friendly mini project manager for event production, with two tabs:
 - **Reel Ideas** — an editable sheet of reel concepts: name, link, description
   and a 1–5 star rating.
 
-Built with React + TypeScript + Vite and plain CSS. Data lives in Supabase and
-is shared across devices in real time; without Supabase credentials the app
-falls back to localStorage automatically.
+Built with React + TypeScript + Vite and plain CSS. Data lives in Cloud
+Firestore and is shared across devices in real time; without Firebase
+credentials the app falls back to localStorage automatically.
 
 ## Running locally
 
 ```bash
 npm install
-cp .env.example .env.local   # optional: add Supabase credentials
+cp .env.example .env.local   # optional: add Firebase credentials
 npm run dev                  # http://localhost:5173
 ```
 
 With `.env.local` left blank the app runs entirely on localStorage — useful for
 development. Fill it in to share data across devices (see
-[Supabase setup](#supabase-setup)).
+[Firebase setup](#firebase-setup)).
 
 Other scripts:
 
 ```bash
-npm test         # vitest (shot tracker + reel ideas)
+npm test              # vitest (shot tracker + reel ideas, localStorage)
+npm run test:integration  # repositories + firestore.rules against the emulator
 npm run build    # type-check + production build to dist/
 npm run preview  # serve the production build
 npm run lint
@@ -50,58 +51,83 @@ There are two persistence layers behind one interface each, in `src/data/`:
 | | Shot tracker | Reel ideas |
 |---|---|---|
 | Interface | `ShotRepository` | `ReelRepository` |
-| Supabase table | `shot_assignments` | `reel_ideas` |
+| Firestore collection | `shot_assignments` | `reel_ideas` |
 | localStorage key | `shot-tracker:state:v1` | `shot-tracker:reels:v1` |
 
 Which implementation is used is decided once, in
-[`src/data/supabase.ts`](src/data/supabase.ts): if `VITE_SUPABASE_URL` and
-`VITE_SUPABASE_ANON_KEY` are both set, the Supabase implementation is exported;
-otherwise the localStorage one is. No component or hook knows the difference.
+[`src/data/firebase.ts`](src/data/firebase.ts): if `VITE_FIREBASE_API_KEY` and
+`VITE_FIREBASE_PROJECT_ID` are both set, the Firestore implementation is
+exported; otherwise the localStorage one is. No component or hook knows the
+difference.
 
-A completed shot is stored as the affiliate id, shot type id, photographer id
-and an ISO completion timestamp, keyed by `affiliateId::shotTypeId` (so one
-shot type per affiliate can have exactly one photographer). A reel idea is a
-row with an id, author, url, description, rating (0 = unrated) and created-at
-timestamp.
+A completed shot is one document per affiliate/shot pair, with id
+`affiliateId__shotTypeId`, holding the affiliate id, shot type id,
+photographer id and an ISO completion timestamp. That shape makes assigning an
+idempotent `setDoc` and clearing a plain `deleteDoc`, with no read-modify-write
+in between — two people tapping the same cell can't corrupt it, the later write
+just wins. A reel idea is one document holding author, url, description,
+rating (0 = unrated) and created-at.
 
-Writes are optimistic: the UI updates immediately and the write goes out
-behind it. Realtime changes from other devices refetch the table and replace
-local state. Text cells in the reel sheet keep their draft in local state and
-commit on a 600ms debounce (and on blur), so an incoming update can't overwrite
-what someone is mid-way through typing.
+Realtime comes from `onSnapshot`, which delivers the whole collection on every
+change including the first, so there is nothing to merge by hand. Writes are
+optimistic: the UI updates immediately and the write goes out behind it. Text
+cells in the reel sheet keep their draft in local state and commit on a 600ms
+debounce (and on blur), so an incoming update can't overwrite what someone is
+mid-way through typing.
 
-## Supabase setup
+## Firebase setup
 
 The app works without this, but nothing is shared between devices until you do
 it.
 
-1. Create a project at [supabase.com](https://supabase.com).
-2. In the SQL editor, run
-   [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql).
-   It creates both tables, enables row-level security, adds the anon-access
-   policies, and adds both tables to the realtime publication.
-3. In **Project Settings → API**, copy the project URL and the `anon` public
-   key.
-4. Put them in `.env.local`:
+1. In the [Firebase console](https://console.firebase.google.com), open your
+   project and create a **Cloud Firestore** database (production mode is fine —
+   the rules below replace the defaults).
+2. Register a **Web app** under Project settings → General → Your apps, and
+   copy the config values it shows you.
+3. Put them in `.env.local`:
 
    ```
-   VITE_SUPABASE_URL=https://xxxxxxxx.supabase.co
-   VITE_SUPABASE_ANON_KEY=eyJhbGci...
+   VITE_FIREBASE_API_KEY=AIza...
+   VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+   VITE_FIREBASE_PROJECT_ID=your-project
+   VITE_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
+   VITE_FIREBASE_MESSAGING_SENDER_ID=000000000000
+   VITE_FIREBASE_APP_ID=1:000000000000:web:abc123
    ```
 
+4. Publish the security rules in [`firestore.rules`](firestore.rules) — either
+   paste them into the Rules tab in the console, or run
+   `firebase deploy --only firestore:rules` if you use the CLI.
 5. Restart `npm run dev`. The subtitle under the title changes to "Shared with
-   your team in real time" when Supabase is active.
+   your team in real time" when Firebase is active.
+
+No collections need creating by hand; they appear on first write.
+
+### Testing against the emulator
+
+`npm run test:integration` starts the Firestore emulator, runs the real
+repository implementations against it, and checks that `firestore.rules`
+rejects malformed writes. It needs Java installed (the emulator is a JVM
+process). The default `npm test` skips these automatically when no emulator is
+running.
 
 ### A note on access
 
-There is no login, as requested. The anon key ships in the JavaScript bundle
-and the policies allow anonymous read and write, so **anyone who has the site
-URL can read and edit the data**. That is fine for a private link shared with
-your crew during an event; it is not fine for anything confidential.
+There is no login, as requested. The Firebase web API key ships in the
+JavaScript bundle and the rules allow anonymous read and write, so **anyone who
+has the site URL can read and edit the data**. That is fine for a private link
+shared with your crew during an event; it is not fine for anything
+confidential. (The API key is not a secret — it identifies the project, it
+doesn't authorise anything. The rules are what control access.)
 
-If you later want to lock it down, add Supabase Auth (magic link is the least
-friction on phones), then change both policies from `to anon` to
-`to authenticated`. No application code has to change apart from adding a
+The rules do constrain *shape*: only the expected fields, and ratings must be
+integers 0–5. That stops a stray client from writing junk, but it does not stop
+anyone from editing your data.
+
+If you later want to lock it down, add Firebase Auth (email link is the least
+friction on phones), then change the rule conditions to require
+`request.auth != null`. No application code has to change apart from adding a
 sign-in screen.
 
 ## Deploying
@@ -112,10 +138,14 @@ Any static host works — the build output is plain files in `dist/`.
 npm run build
 ```
 
-On Vercel, Netlify, or Cloudflare Pages: build command `npm run build`, output
-directory `dist`. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as
-environment variables in the host's dashboard. They are baked into the bundle
-at build time, so you must redeploy after changing them.
+On Firebase Hosting: `firebase init hosting` with `dist` as the public
+directory and single-page-app rewrites on, then `firebase deploy`. Vercel,
+Netlify, and Cloudflare Pages work equally well with build command
+`npm run build` and output directory `dist`.
+
+Wherever you deploy, set the six `VITE_FIREBASE_*` values as environment
+variables in the host's dashboard. Vite bakes them into the bundle at build
+time, so you must redeploy after changing them.
 
 ## Mobile notes
 
