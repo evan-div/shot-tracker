@@ -102,3 +102,15 @@ example, with Supabase:
 
 Firebase Realtime Database / Firestore work the same way: one document per cell
 or a single document holding the map, with `onSnapshot` driving `subscribe`.
+
+## Mobile notes
+
+The layout is built phone-first:
+
+- Column headings wrap onto two lines so shot columns stay ~90px wide, which
+  fits the affiliate column plus roughly three shot columns on a 390px screen.
+- The affiliate column is sticky, so it stays visible while scrolling sideways.
+- Below 640px the assignment popover becomes a bottom sheet with a backdrop —
+  easier to reach one-handed, and it can't land half off-screen next to an edge
+  column. The sheet names the cell being edited, since it covers the table.
+- Touch targets are at least 48px (52px inside the sheet).

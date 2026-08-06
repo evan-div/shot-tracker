@@ -4,6 +4,23 @@ import type { ShotAssignment } from './types';
 
 const POPOVER_WIDTH = 210;
 const POPOVER_MARGIN = 8;
+const SHEET_BREAKPOINT = '(max-width: 640px)';
+
+/** True on phone-sized viewports, where the popover renders as a bottom sheet. */
+function useIsSheet(): boolean {
+  const [isSheet, setIsSheet] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(SHEET_BREAKPOINT).matches
+  );
+
+  useEffect(() => {
+    const mql = window.matchMedia(SHEET_BREAKPOINT);
+    const handler = (e: MediaQueryListEvent) => setIsSheet(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
+  return isSheet;
+}
 
 /**
  * Popovers live inside a horizontally scrolling container, so they are
@@ -73,7 +90,8 @@ export function ShotCell({
   const popoverRef = useRef<HTMLDivElement>(null);
   // Roughly the rendered popover height; only used to decide flip direction.
   const estimatedHeight = confirmingClear ? 190 : assignment ? 260 : 210;
-  const pos = usePopoverPosition(buttonRef, open, estimatedHeight);
+  const isSheet = useIsSheet();
+  const pos = usePopoverPosition(buttonRef, open && !isSheet, estimatedHeight);
 
   useEffect(() => {
     if (!open) return;
@@ -147,14 +165,31 @@ export function ShotCell({
         )}
       </button>
 
+      {open && isSheet && (
+        <div
+          className="sheet-backdrop"
+          onClick={() => {
+            setOpen(false);
+            setConfirmingClear(false);
+          }}
+        />
+      )}
+
       {open && (
         <div
-          className="popover"
+          className={`popover${isSheet ? ' as-sheet' : ''}`}
           ref={popoverRef}
           role="dialog"
+          aria-modal={isSheet}
           aria-label={`Assign photographer for ${label}`}
-          style={pos ? { top: pos.top, left: pos.left } : { visibility: 'hidden' }}
+          style={isSheet ? undefined : pos ? { top: pos.top, left: pos.left } : { visibility: 'hidden' }}
         >
+          {/* The sheet covers the table, so name the cell being edited. */}
+          {isSheet && (
+            <p className="popover-context">
+              {affiliateName} <span aria-hidden="true">·</span> {shotTypeName}
+            </p>
+          )}
           {!confirmingClear ? (
             <>
               <p className="popover-title">

@@ -102,6 +102,38 @@ describe('Shot tracker', () => {
     expect(firstCellButton()).toHaveTextContent('Fran');
   });
 
+  it('renders a bottom sheet on phone-sized viewports', async () => {
+    const user = userEvent.setup();
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('max-width: 640px'),
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia;
+
+    try {
+      render(<App />);
+      await user.click(firstCellButton());
+
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toHaveClass('as-sheet');
+      expect(dialog).toHaveAttribute('aria-modal', 'true');
+      // The sheet names the cell being edited, since it covers the table.
+      expect(dialog).toHaveTextContent('Amy Porterfield');
+      expect(dialog).toHaveTextContent('Reveal Reaction');
+
+      await user.click(within(dialog).getByRole('button', { name: 'Evan' }));
+      expect(firstCellButton()).toHaveTextContent('Evan');
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
   it('updates the progress summary as shots are completed', async () => {
     const user = userEvent.setup();
     render(<App />);

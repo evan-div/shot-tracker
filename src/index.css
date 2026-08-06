@@ -1,10 +1,9 @@
 :root {
-  --forest: #1e3a32;
-  --forest-dark: #162b25;
-  --off-white: #f7f5f0;
-  --row-tint: #f4f2ec;
-  --border: #e2ded4;
-  --text: #1f2421;
+  --forest: #2b3830;
+  --off-white: #fbfcf1;
+  --row-tint: #fafaf6;
+  --border: #ecebe3;
+  --text: #232825;
   --muted: #6b7069;
 
   --accent-evan: #2f6f4e;
