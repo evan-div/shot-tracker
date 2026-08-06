@@ -132,20 +132,37 @@ sign-in screen.
 
 ## Deploying
 
-Any static host works — the build output is plain files in `dist/`.
+Firebase Hosting is configured in [`firebase.json`](firebase.json), with the
+project pinned in [`.firebaserc`](.firebaserc). From a machine that has run
+`firebase login`:
 
 ```bash
-npm run build
+cp .env.example .env.local   # if you haven't already - see Firebase setup
+npm run deploy               # builds, then deploys hosting
 ```
 
-On Firebase Hosting: `firebase init hosting` with `dist` as the public
-directory and single-page-app rewrites on, then `firebase deploy`. Vercel,
-Netlify, and Cloudflare Pages work equally well with build command
-`npm run build` and output directory `dist`.
+That publishes to `https://shot-tracker-30ab7.web.app`.
 
-Wherever you deploy, set the six `VITE_FIREBASE_*` values as environment
-variables in the host's dashboard. Vite bakes them into the bundle at build
-time, so you must redeploy after changing them.
+`npm run deploy` runs the build first (a `predeploy` hook), so `dist/` is always
+fresh. **`.env.local` must be present when it runs** - Vite bakes the Firebase
+config into the bundle at build time, and without it you will deploy a build
+that silently falls back to localStorage. The subtitle under the title is the
+quick check: "Shared with your team in real time" means the config made it in.
+
+Security rules deploy separately, so publishing the app never silently changes
+who can read your data:
+
+```bash
+npm run deploy:rules
+```
+
+Caching is set so `/assets/**` (hashed filenames) is cached for a year while
+`index.html` is never cached - push a fix mid-event and phones pick it up on
+the next reload.
+
+Any other static host works too: build command `npm run build`, output
+directory `dist`, with the six `VITE_FIREBASE_*` values set as environment
+variables in the host's dashboard.
 
 ## Mobile notes
 
