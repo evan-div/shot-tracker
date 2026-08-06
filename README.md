@@ -16,13 +16,12 @@ credentials the app falls back to localStorage automatically.
 
 ```bash
 npm install
-cp .env.example .env.local   # optional: add Firebase credentials
-npm run dev                  # http://localhost:5173
+npm run dev      # http://localhost:5173
 ```
 
-With `.env.local` left blank the app runs entirely on localStorage — useful for
-development. Fill it in to share data across devices (see
-[Firebase setup](#firebase-setup)).
+`npm run dev` uses localStorage by default, which is usually what you want while
+developing. To run against the live Firestore data, copy the values from
+[`.env.production`](.env.production) into `.env.local`.
 
 Other scripts:
 
@@ -77,32 +76,26 @@ mid-way through typing.
 
 ## Firebase setup
 
-The app works without this, but nothing is shared between devices until you do
-it.
+Already done for `shot-tracker-30ab7`: the Firestore database exists, the rules
+in [`firestore.rules`](firestore.rules) are published, and the web config is
+committed in [`.env.production`](.env.production). Nothing to do.
 
-1. In the [Firebase console](https://console.firebase.google.com), open your
-   project and create a **Cloud Firestore** database (production mode is fine —
-   the rules below replace the defaults).
-2. Register a **Web app** under Project settings → General → Your apps, and
-   copy the config values it shows you.
-3. Put them in `.env.local`:
+To point the app at a **different** Firebase project:
 
-   ```
-   VITE_FIREBASE_API_KEY=AIza...
-   VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-   VITE_FIREBASE_PROJECT_ID=your-project
-   VITE_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
-   VITE_FIREBASE_MESSAGING_SENDER_ID=000000000000
-   VITE_FIREBASE_APP_ID=1:000000000000:web:abc123
-   ```
+1. In the [Firebase console](https://console.firebase.google.com), create a
+   **Cloud Firestore** database (production mode is fine — the rules replace
+   the defaults).
+2. Register a **Web app** under Project settings → General → Your apps and copy
+   the config values.
+3. Put them in `.env.production`, and update the project id in
+   [`.firebaserc`](.firebaserc), [`firebase.json`](firebase.json)'s deploy
+   targets, and the workflows in `.github/workflows/`.
+4. Publish [`firestore.rules`](firestore.rules) — paste them into the Rules tab
+   in the console, or run `npm run deploy:rules`.
 
-4. Publish the security rules in [`firestore.rules`](firestore.rules) — either
-   paste them into the Rules tab in the console, or run
-   `firebase deploy --only firestore:rules` if you use the CLI.
-5. Restart `npm run dev`. The subtitle under the title changes to "Shared with
-   your team in real time" when Firebase is active.
-
-No collections need creating by hand; they appear on first write.
+No collections need creating by hand; they appear on first write. The subtitle
+under the title reads "Shared with your team in real time" when Firebase is
+active, and "Saved on this device" when it isn't.
 
 ### Testing against the emulator
 
@@ -132,37 +125,62 @@ sign-in screen.
 
 ## Deploying
 
-Firebase Hosting is configured in [`firebase.json`](firebase.json), with the
-project pinned in [`.firebaserc`](.firebaserc). From a machine that has run
-`firebase login`:
+Pushing to the default branch deploys automatically via GitHub Actions
+([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)). The workflow
+type-checks, lints, tests, builds, verifies the Firebase config actually made
+it into the bundle, and then deploys to
+`https://shot-tracker-30ab7.web.app`.
+
+Pull requests get a temporary preview URL posted as a comment
+([`.github/workflows/preview.yml`](.github/workflows/preview.yml)). Preview
+channels share the same Firestore data as production, so edits made in a
+preview are real edits to the live checklist.
+
+### One-time setup
+
+The workflows need a service account secret. From a machine with the Firebase
+CLI:
 
 ```bash
-cp .env.example .env.local   # if you haven't already - see Firebase setup
-npm run deploy               # builds, then deploys hosting
+firebase init hosting:github
 ```
 
-That publishes to `https://shot-tracker-30ab7.web.app`.
+Pick this repo when prompted. It creates a service account scoped to this
+project and stores it as the GitHub secret
+`FIREBASE_SERVICE_ACCOUNT_SHOT_TRACKER_30AB7`. **Delete the two workflow files
+it generates** (`firebase-hosting-merge.yml`, `firebase-hosting-pull-request.yml`)
+— the ones already in this repo replace them and do more.
 
-`npm run deploy` runs the build first (a `predeploy` hook), so `dist/` is always
-fresh. **`.env.local` must be present when it runs** - Vite bakes the Firebase
-config into the bundle at build time, and without it you will deploy a build
-that silently falls back to localStorage. The subtitle under the title is the
-quick check: "Shared with your team in real time" means the config made it in.
-
-Security rules deploy separately, so publishing the app never silently changes
-who can read your data:
+### Deploying by hand
 
 ```bash
-npm run deploy:rules
+npm run deploy         # build + deploy hosting
+npm run deploy:rules   # security rules, deployed separately on purpose
 ```
+
+Rules deploy separately so shipping the app can never silently change who can
+read your data.
+
+### About the config in `.env.production`
+
+The Firebase web config is committed in
+[`.env.production`](.env.production) rather than kept in secrets. Those values
+are not secret — Vite bakes them into the bundle, so they are public on any
+deployed build, and Google documents the web config as public. What protects
+your data is `firestore.rules`.
+
+Keeping them in the repo means CI builds a correctly configured bundle with one
+secret instead of seven. The failure it avoids is a nasty one: a bundle built
+without the config still works, silently falling back to localStorage, and you
+only find out when two phones disagree mid-event. The workflow greps the built
+bundle for the project id and fails the deploy if it is missing.
 
 Caching is set so `/assets/**` (hashed filenames) is cached for a year while
-`index.html` is never cached - push a fix mid-event and phones pick it up on
+`index.html` is never cached — push a fix mid-event and phones pick it up on
 the next reload.
 
 Any other static host works too: build command `npm run build`, output
-directory `dist`, with the six `VITE_FIREBASE_*` values set as environment
-variables in the host's dashboard.
+directory `dist`.
 
 ## Mobile notes
 

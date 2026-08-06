@@ -1,0 +1,52 @@
+name: Preview on pull request
+
+on:
+  pull_request:
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    # Pull requests from forks don't get repository secrets, so the deploy step
+    # would fail with a confusing auth error. Skip those; the checks below
+    # still run on the PR itself.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type check
+        run: npx tsc -b
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # Posts a temporary preview URL on the pull request. Preview channels
+      # share the same Firestore data as production, so treat anything you do
+      # in a preview as real edits to the live checklist.
+      - name: Deploy preview channel
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SHOT_TRACKER_30AB7 }}
+          projectId: shot-tracker-30ab7
+          expires: 7d

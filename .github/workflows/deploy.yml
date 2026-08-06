@@ -1,0 +1,60 @@
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    # The repo's default branch today is the claude/* branch; `main` is listed
+    # too so this keeps working once the work is merged or the branch renamed.
+    branches:
+      - main
+      - claude/event-photo-tracker-wqw4xb
+  workflow_dispatch:
+
+# Never let two deploys race; cancel an in-flight one if a newer push lands.
+concurrency:
+  group: deploy-hosting
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type check
+        run: npx tsc -b
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      # Builds with .env.production, so the Firebase config is baked in.
+      - name: Build
+        run: npm run build
+
+      # Catches the one failure that is invisible until people are using it:
+      # a bundle built without the Firebase config, which silently falls back
+      # to localStorage and lets two phones disagree.
+      - name: Verify Firebase config made it into the bundle
+        run: |
+          if ! grep -rq "shot-tracker-30ab7" dist/assets/*.js; then
+            echo "::error::Built bundle has no Firebase project id - it would fall back to localStorage."
+            exit 1
+          fi
+          echo "Firebase config present in bundle."
+
+      - name: Deploy
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SHOT_TRACKER_30AB7 }}
+          projectId: shot-tracker-30ab7
+          channelId: live
