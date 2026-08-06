@@ -99,7 +99,8 @@ describe('Shot tracker', () => {
 
     unmount();
     render(<App />);
-    expect(firstCellButton()).toHaveTextContent('Fran');
+    // The repository loads asynchronously, so wait for the restored cell.
+    expect(await screen.findByRole('button', { name: /completed by fran/ })).toBeInTheDocument();
   });
 
   it('renders a bottom sheet on phone-sized viewports', async () => {

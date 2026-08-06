@@ -1,23 +1,33 @@
-# Event Shot Tracker
+# Event Production
 
-A mobile-friendly, spreadsheet-style checklist for tracking event photography
-coverage. Each row is an affiliate, each column is a required shot type, and
-each cell records which photographer captured it.
+A mobile-friendly mini project manager for event production, with two tabs:
 
-Built with React + TypeScript + Vite and plain CSS — no UI framework, no
-runtime dependencies beyond React.
+- **Shot Tracker** — a spreadsheet-style checklist. Each row is an affiliate,
+  each column is a required shot type, and each cell records which
+  photographer captured it.
+- **Reel Ideas** — an editable sheet of reel concepts: name, link, description
+  and a 1–5 star rating.
+
+Built with React + TypeScript + Vite and plain CSS. Data lives in Supabase and
+is shared across devices in real time; without Supabase credentials the app
+falls back to localStorage automatically.
 
 ## Running locally
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
+cp .env.example .env.local   # optional: add Supabase credentials
+npm run dev                  # http://localhost:5173
 ```
+
+With `.env.local` left blank the app runs entirely on localStorage — useful for
+development. Fill it in to share data across devices (see
+[Supabase setup](#supabase-setup)).
 
 Other scripts:
 
 ```bash
-npm test         # vitest (assign / change / clear / save / restore)
+npm test         # vitest (shot tracker + reel ideas)
 npm run build    # type-check + production build to dist/
 npm run preview  # serve the production build
 npm run lint
@@ -35,73 +45,77 @@ Changing a `name` is always safe.
 
 ## How data is stored
 
-State is a flat map keyed by `` `${affiliateId}::${shotTypeId}` ``. Each
-completed cell is stored as:
+There are two persistence layers behind one interface each, in `src/data/`:
 
-```ts
-{
-  affiliateId: 'amy-porterfield',
-  shotTypeId: 'reveal-reaction',
-  photographerId: 'evan',
-  completedAt: '2026-08-06T14:12:25.000Z'
-}
-```
+| | Shot tracker | Reel ideas |
+|---|---|---|
+| Interface | `ShotRepository` | `ReelRepository` |
+| Supabase table | `shot_assignments` | `reel_ideas` |
+| localStorage key | `shot-tracker:state:v1` | `shot-tracker:reels:v1` |
 
-Cells with no entry are incomplete. The whole map is serialized to
-`localStorage` under the key `shot-tracker:state:v1` on every change, so a
-refresh restores progress.
+Which implementation is used is decided once, in
+[`src/data/supabase.ts`](src/data/supabase.ts): if `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_ANON_KEY` are both set, the Supabase implementation is exported;
+otherwise the localStorage one is. No component or hook knows the difference.
 
-Persistence is isolated behind the `ShotStore` interface in
-[`src/storage.ts`](src/storage.ts):
+A completed shot is stored as the affiliate id, shot type id, photographer id
+and an ISO completion timestamp, keyed by `affiliateId::shotTypeId` (so one
+shot type per affiliate can have exactly one photographer). A reel idea is a
+row with an id, author, url, description, rating (0 = unrated) and created-at
+timestamp.
 
-```ts
-interface ShotStore {
-  load(): ShotState;
-  save(state: ShotState): void;
-  subscribe(callback: (state: ShotState) => void): () => void;
-}
-```
+Writes are optimistic: the UI updates immediately and the write goes out
+behind it. Realtime changes from other devices refetch the table and replace
+local state. Text cells in the reel sheet keep their draft in local state and
+commit on a 600ms debounce (and on blur), so an incoming update can't overwrite
+what someone is mid-way through typing.
 
-`useShotState` only talks to that interface, so components never touch storage
-directly.
+## Supabase setup
+
+The app works without this, but nothing is shared between devices until you do
+it.
+
+1. Create a project at [supabase.com](https://supabase.com).
+2. In the SQL editor, run
+   [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql).
+   It creates both tables, enables row-level security, adds the anon-access
+   policies, and adds both tables to the realtime publication.
+3. In **Project Settings → API**, copy the project URL and the `anon` public
+   key.
+4. Put them in `.env.local`:
+
+   ```
+   VITE_SUPABASE_URL=https://xxxxxxxx.supabase.co
+   VITE_SUPABASE_ANON_KEY=eyJhbGci...
+   ```
+
+5. Restart `npm run dev`. The subtitle under the title changes to "Shared with
+   your team in real time" when Supabase is active.
+
+### A note on access
+
+There is no login, as requested. The anon key ships in the JavaScript bundle
+and the policies allow anonymous read and write, so **anyone who has the site
+URL can read and edit the data**. That is fine for a private link shared with
+your crew during an event; it is not fine for anything confidential.
+
+If you later want to lock it down, add Supabase Auth (magic link is the least
+friction on phones), then change both policies from `to anon` to
+`to authenticated`. No application code has to change apart from adding a
+sign-in screen.
 
 ## Deploying
 
-The build is fully static:
+Any static host works — the build output is plain files in `dist/`.
 
 ```bash
-npm run build   # outputs dist/
+npm run build
 ```
 
-Deploy `dist/` to any static host (Netlify, Vercel, GitHub Pages, S3, Cloudflare
-Pages). No server, environment variables, or authentication are required.
-
-If deploying under a sub-path (e.g. GitHub Pages project sites), set `base` in
-`vite.config.ts`.
-
-## Enabling shared, real-time state
-
-Today, `subscribe` uses the browser `storage` event, so two tabs in the *same*
-browser stay in sync — but different devices do not share state.
-
-To make it shared, implement `ShotStore` against a backend and swap the export
-at the bottom of `src/storage.ts`. No component changes are needed. For
-example, with Supabase:
-
-1. Create a `shots` table with columns `affiliate_id`, `shot_type_id`,
-   `photographer_id`, `completed_at`, and a composite primary key on
-   (`affiliate_id`, `shot_type_id`).
-2. `load()` selects all rows and folds them into a `ShotState`.
-3. `save()` upserts changed rows / deletes cleared ones. (Consider changing the
-   interface to per-cell `set`/`remove` methods rather than whole-state saves —
-   the hook is small and easy to adapt.)
-4. `subscribe()` opens a Realtime channel on the table and calls back with the
-   updated state.
-5. Enable row-level security appropriate for your team, or keep the table
-   restricted to an anon key behind a private URL if no auth is wanted.
-
-Firebase Realtime Database / Firestore work the same way: one document per cell
-or a single document holding the map, with `onSnapshot` driving `subscribe`.
+On Vercel, Netlify, or Cloudflare Pages: build command `npm run build`, output
+directory `dist`. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as
+environment variables in the host's dashboard. They are baked into the bundle
+at build time, so you must redeploy after changing them.
 
 ## Mobile notes
 
@@ -114,3 +128,7 @@ The layout is built phone-first:
   easier to reach one-handed, and it can't land half off-screen next to an edge
   column. The sheet names the cell being edited, since it covers the table.
 - Touch targets are at least 48px (52px inside the sheet).
+- The Reel Ideas sheet is a table on desktop but becomes one card per idea
+  below 700px — typing into a 200px cell you have to scroll sideways to reach
+  is miserable on a touch keyboard. Inputs use a 16px font there so iOS Safari
+  doesn't zoom on focus.

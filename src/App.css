@@ -426,3 +426,347 @@
     font-size: 1rem;
   }
 }
+
+/* ---------- Tabs ---------- */
+
+.tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin: 1.35rem 0 1.35rem;
+  padding: 0.3rem;
+  background: #f0efe6;
+  border-radius: 12px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 0.6rem 1.1rem;
+  min-height: 44px;
+  border-radius: 9px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  background: #fff;
+  color: var(--forest);
+  box-shadow: 0 1px 3px rgba(35, 40, 37, 0.12);
+}
+
+.tab-panel:focus {
+  outline: none;
+}
+
+/* ---------- Reel ideas sheet ---------- */
+
+.sheet-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.sheet-count {
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.sheet-count strong {
+  color: var(--text);
+  font-size: 1.15rem;
+}
+
+.add-row-button {
+  appearance: none;
+  border: none;
+  background: var(--forest);
+  color: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.65rem 1.1rem;
+  min-height: 44px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.add-row-button:hover {
+  background: #38483d;
+}
+
+.empty-state {
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--muted);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.error-banner {
+  margin: 0 0 0.9rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  background: #fbeaea;
+  color: #8c2f2f;
+  font-size: 0.9rem;
+}
+
+.reel-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  min-width: 820px;
+  table-layout: fixed;
+}
+
+.reel-table thead th {
+  background: var(--forest);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 1rem 0.85rem;
+}
+
+.reel-table .col-name { width: 160px; }
+.reel-table .col-link { width: 230px; }
+.reel-table .col-description { width: auto; }
+.reel-table .col-rating { width: 150px; }
+.reel-table .col-actions { width: 60px; }
+
+.reel-table thead tr th:first-child { border-top-left-radius: 15px; }
+.reel-table thead tr th:last-child { border-top-right-radius: 15px; }
+.reel-table tbody tr:last-child td:first-child { border-bottom-left-radius: 15px; }
+.reel-table tbody tr:last-child td:last-child { border-bottom-right-radius: 15px; }
+
+.reel-table tbody tr:nth-child(even) td { background: var(--row-tint); }
+.reel-table tbody tr:nth-child(odd) td { background: #fff; }
+
+.reel-table tbody td {
+  border-top: 1px solid var(--border);
+  padding: 0.5rem 0.6rem;
+  vertical-align: middle;
+}
+
+.sheet-input {
+  width: 100%;
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0.55rem 0.6rem;
+  min-height: 44px;
+  resize: none;
+}
+
+.sheet-input:hover {
+  border-color: var(--border);
+  background: #fff;
+}
+
+.sheet-input:focus {
+  outline: none;
+  border-color: var(--forest);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(43, 56, 48, 0.12);
+}
+
+.sheet-input::placeholder {
+  color: #a3a79f;
+}
+
+.link-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.open-link {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--forest);
+  text-decoration: none;
+  padding: 0.5rem 0.55rem;
+  border-radius: 8px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.open-link:hover {
+  background: #eef1ed;
+  text-decoration: underline;
+}
+
+.star-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.star {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.3rem;
+  line-height: 1;
+  color: #c9ccc5;
+  padding: 0.35rem 0.15rem;
+  min-height: 44px;
+  min-width: 28px;
+  border-radius: 6px;
+  transition: color 0.12s ease, transform 0.12s ease;
+}
+
+.star.filled {
+  color: #d99a2b;
+}
+
+.star:hover {
+  transform: scale(1.12);
+}
+
+.row-delete,
+.row-delete-confirm,
+.row-delete-cancel {
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  min-height: 44px;
+}
+
+.row-delete {
+  border: none;
+  background: transparent;
+  color: #9aa096;
+  font-size: 1rem;
+  min-width: 44px;
+}
+
+.row-delete:hover {
+  background: #f6e9e9;
+  color: #a33a3a;
+}
+
+.row-confirm {
+  display: inline-flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.row-delete-confirm {
+  border: none;
+  background: #a33a3a;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0 0.7rem;
+}
+
+.row-delete-cancel {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0 0.7rem;
+}
+
+/*
+ * On phones the reel sheet stops being a scrolling grid and becomes one card
+ * per idea — text entry in a 200px-wide cell you have to scroll sideways to
+ * reach is miserable on a touch keyboard.
+ */
+@media (max-width: 700px) {
+  .reel-table,
+  .reel-table tbody,
+  .reel-table tr,
+  .reel-table td {
+    display: block;
+    width: auto;
+  }
+
+  .reel-table {
+    min-width: 0;
+  }
+
+  .reel-table thead {
+    display: none;
+  }
+
+  .reel-table tbody tr {
+    border-top: 1px solid var(--border);
+    padding: 0.5rem 0.75rem 0.85rem;
+    position: relative;
+  }
+
+  .reel-table tbody tr:first-child {
+    border-top: none;
+  }
+
+  .reel-table tbody tr:nth-child(even) td,
+  .reel-table tbody tr:nth-child(even) {
+    background: var(--row-tint);
+  }
+
+  .reel-table tbody td {
+    border-top: none;
+    background: transparent !important;
+    padding: 0.3rem 0;
+  }
+
+  .reel-table tbody td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.15rem;
+  }
+
+  .reel-table tbody td.col-actions {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0;
+  }
+
+  .reel-table tbody td.col-actions::before {
+    content: none;
+  }
+
+  .sheet-input {
+    background: #fff;
+    border-color: var(--border);
+    font-size: 16px; /* keeps iOS Safari from zooming on focus */
+  }
+
+  .col-name .sheet-input {
+    padding-right: 3rem; /* clear of the delete button */
+  }
+}
